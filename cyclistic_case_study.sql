@@ -1,4 +1,4 @@
-# Organizing data by month and double checking to ensure datavalues are within expected range. Start month ranges from 4 (April) to 9 (September) as expected. Trips begin and end entirely within stated months. All coordinates for each month are contained within the Chicago area.
+# Organizing data by month and double checking to ensure data values are within expected range. Start month ranges from 4 (April) to 9 (September) as expected. Trips begin and end entirely within stated months. All coordinates for each month are contained within the Chicago area.
 
 SELECT 
     EXTRACT(MONTH FROM started_at) AS start_month,
@@ -19,7 +19,7 @@ SELECT
 
 
 
-# COUNT(ride_id) and COUNT(DISTINCT ride_id) return the same value. There are no duplicates in the table; every ride_id is unique.
+# COUNT(ride_id) and COUNT(DISTINCT ride_id) return the same value. There are no duplicates in the table, so every ride_id is unique.
 
 SELECT 
     COUNT(ride_id),
@@ -29,7 +29,7 @@ FROM `glassy-compiler-321611.cyclistic_capstone.2021FY-2nd-half_tripdata`
 
 
 
-# Checking the length of rides by comparing the started_at and ended_at times, organized by minute. Original source of the data mentioned that trips under 60 seconds were removed, but trips of 1 minute or less are still in the dataset. In fact, a small number of the results are negative, which indicates the trips ended before starting -- these rows are questionable and should not be included in the final analysis. 
+# Length of rides by minute. Original source mentioned that trips under 60 seconds were removed, but trips of 1 minute or less are still in the dataset. In fact, a small number of the results are negative, which should not be included in the final analysis. 
 
 SELECT 
     DISTINCT TIMESTAMP_DIFF(ended_at, started_at, MINUTE) AS duration_in_minutes,
@@ -42,7 +42,7 @@ ORDER BY duration_in_minutes
 
 
 
-# Checking the length of rides as above, but organized by hour. The vast majority of rides seem to be 6 hours or less. Rides 25 hours or more are 100% casual riders, but a small group in comparison to the overall dataset. They most likely do not represent typical casual riders. There's a sudden large jump in trips that are 24 hours  (1995 total) vs. 23 hours (115 total) or 25 hours (34 total). 
+# Length of rides by hour. The vast majority of rides are 6 hours or less. Rides 25 hours or more are 100% casual riders, but a small group in comparison to the overall dataset. They most likely do not represent typical casual riders. There's a sudden large jump in trips that are 24 hours  (1995 total) vs. 23 hours (115 total) or 25 hours (34 total). 
 
 SELECT 
     DISTINCT TIMESTAMP_DIFF(ended_at, started_at, HOUR) AS duration_in_hours,
@@ -56,8 +56,7 @@ ORDER BY duration_in_hours
 
 
 
-# This is a closer look at the jump from 23 to 24 hours. The jump isn't for the hour, it's for exactly 1499 minutes. Only 1 ride was 1500 minutes, and only 1 ride was 1498 minutes, but 1887 people ended their trips exactly 1499 minutes after starting them. The sudden jump is suspeect and shouldn't be included in the final analysis.
-
+# This is a closer look at the jump from 23 to 24 hours. The jump isn't for the hour, it's for exactly 1499 minutes. Only 1 ride was 1500 minutes, and only 1 ride was 1498 minutes, but 1887 people ended their trips exactly 1499 minutes after starting them. The sudden jump is suspect.
 SELECT 
     TIMESTAMP_DIFF(ended_at, started_at, MINUTE) AS minutes_difference,
     COUNT(started_at) AS number_of_rides,
@@ -82,7 +81,7 @@ FROM `glassy-compiler-321611.cyclistic_capstone.2021FY-2nd-half_tripdata`
 
 
 
-# Determining the exact location of each starting station, and verifying the integrity of coordinate information. Ideally we would expect the minimum/average/maximum for each station to all be the same. In reality they differ slightly. The longitude and latitude data are mostly consistent, varying by less than 0.01 degrees total for all stations except 21. Using average values a reasonable approximation for each station's actual location.
+# Determining the exact location of each starting station. Ideally we would expect the minimum/average/maximum for each station to all be the same. In reality they differ slightly. The longitude and latitude data are mostly consistent, varying by less than 0.01 degrees total for almost all stations. Using average values is a reasonable approximation for each station's actual location.
 
 SELECT 
     start_station_name,
@@ -147,9 +146,9 @@ GROUP BY start_station_name
 ## -Trips under 1 minute and over 6 hours will be removed
 ## -Average coordinates for starting and ending stations are in very close agreement
 ## -Upper case stations may be test stations and won't be included in the final analysis
-
-## Now, I want to dive into questions related to my analysis.
-
+##
+## Now, we can dive into questions related to the analysis.
+##
 ## Which areas of Chicago do casual riders prefer?
 ## Which stations have the highest and lowest proportion of members vs. casual riders?
 ## Which stations are most popular (with both members and casual riders)?
@@ -211,7 +210,7 @@ ORDER BY length_in_minutes
 
 
 
-# 100% of docked_bikes were used by casual riders. There might be a reason for this, perhaps docked_bikes can only be riden by casual riders. Without knowing more about why 100% of docked_bikes were used by casual riders, I'd rather not include them in the final analysis. 
+# 100% of docked_bikes were used by casual riders. There might be a reason for this, perhaps docked_bikes can only be riden by casual riders. 
 
 SELECT 
     rideable_type,
@@ -226,7 +225,7 @@ ORDER BY percent_casual
 
 
 
-# This query summarizes and extracts only the data that we need from April to September 2021, specifically the date, month, day of month, hour, and how long the ride was in seconds, formatted such that we can visualize it easily using R. Rides shorter than 1 minute and 6 hours or longer have been removed.
+# Relevant data extracted so it can be visualized easily using R. Specifically the date, month, day of month, hour, and how long the ride was in seconds. Rides shorter than 1 minute and 6 hours or longer have been removed.
 
 SELECT 
     EXTRACT(DATE FROM started_at) AS date,
@@ -242,7 +241,7 @@ ORDER BY started_at
 
 
 
-# This provides information on how many trips occurred at each station, the location of each station, and the percenage of casual riders, filtering out trips shorter than 1 minute and longer than 6 hours, and stations in upper case. This data will tell us which stations have the most casual riders vs. members, which stations are most popular, and be used to make a map in R using ggplot2. 
+# Station Information which can be used for visualization in R. Includes the location of each station, and the percenage of casual riders, filtering out trips shorter than 1 minute and longer than 6 hours, and stations in upper case.
 
 SELECT 
     start_station_name,
