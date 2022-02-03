@@ -1,2 +1,2 @@
 # data-analytics
-Contains personal data analytics projects and case studies
+Data analytics projects and case studies
