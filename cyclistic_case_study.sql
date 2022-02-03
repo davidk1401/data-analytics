@@ -1,8 +1,4 @@
-# Organizing data by month and double checking to ensure these columns don't contain any values outside of the expected range. 
-# Start month ranges from 4 (April) to 9 (September) as expected. Trips begin and end entirely within the stated months. 
-# All coordinates for each month are contained within the Chicago area. Starting coordinates are mostly consistent between months, 
-# but end coordinates vary slightly from month to month. The difference between the min_end_lat values of 41.51 and 41.63 translates to about 8 kilometers. 
-# It's a reasonable distance to travel by bicycle.
+# Organizing data by month and double checking to ensure datavalues are within expected range. Start month ranges from 4 (April) to 9 (September) as expected. Trips begin and end entirely within stated months. All coordinates for each month are contained within the Chicago area.
 
 SELECT 
     EXTRACT(MONTH FROM started_at) AS start_month,
@@ -19,37 +15,21 @@ SELECT
  FROM `glassy-compiler-321611.cyclistic_capstone.2021FY-2nd-half_tripdata`
  GROUP BY start_month
  ORDER BY start_month
----
-# COUNT(ride_id) and COUNT(DISTINCT ride_id) return the same value, indicating there are no duplicates in the table and every ride_id is unique.
+
+
+
+
+# COUNT(ride_id) and COUNT(DISTINCT ride_id) return the same value. There are no duplicates in the table; every ride_id is unique.
 
 SELECT 
     COUNT(ride_id),
     COUNT(DISTINCT ride_id)
 FROM `glassy-compiler-321611.cyclistic_capstone.2021FY-2nd-half_tripdata`
----
-# Comparing all columns to the COUNT() of ride_id (which does not contain any nulls) to determine the percent of null values in each column. 
-# About 11% of the starting and ending stations are nulls, along with about 0.1% of the ending coordinates. No other columns contain null values.
 
-SELECT 
-    1 - (COUNT(ride_id) / COUNT(ride_id)) AS ride_id,
-    1 - (COUNT(rideable_type) / COUNT(ride_id)) AS type, 
-    1 - (COUNT(started_at) / COUNT(ride_id)) AS start, 
-    1 - (COUNT(ended_at) / COUNT(ride_id)) AS finish, 
-    1 - (COUNT(start_station_name) / COUNT(ride_id)) AS start_station, 
-    1 - (COUNT(start_station_id) / COUNT(ride_id)) AS start_id,
-    1 - (COUNT(end_station_name) / COUNT(ride_id)) AS end_station,
-    1 - (COUNT(end_station_id) / COUNT(ride_id)) AS end_id,
-    1 - (COUNT(start_lat) / COUNT(ride_id)) AS start_lat,
-    1 - (COUNT(start_lng) / COUNT(ride_id)) AS start_lng,
-    1 - (COUNT(end_lat) / COUNT(ride_id)) AS end_lat,
-    1 - (COUNT(end_lng) / COUNT(ride_id)) AS end_lng,
-    1 - (COUNT(member_casual) / COUNT(ride_id)) AS member
-FROM `glassy-compiler-321611.cyclistic_capstone.2021FY-2nd-half_tripdata`
----
-# Checking the length of rides by comparing the started_at and ended_at times, organized by minute. 
-# The original source of the data mentioned that trips under 60 seconds were removed, but trips of 1 minute or less are still in the dataset. 
-# In fact, a small number of the results are negative, which indicates the trips ended before starting -- these rows are questionable,
-# and should not be included in the final analysis. 
+
+
+
+# Checking the length of rides by comparing the started_at and ended_at times, organized by minute. Original source of the data mentioned that trips under 60 seconds were removed, but trips of 1 minute or less are still in the dataset. In fact, a small number of the results are negative, which indicates the trips ended before starting -- these rows are questionable and should not be included in the final analysis. 
 
 SELECT 
     DISTINCT TIMESTAMP_DIFF(ended_at, started_at, MINUTE) AS duration_in_minutes,
@@ -58,10 +38,11 @@ SELECT
 FROM `glassy-compiler-321611.cyclistic_capstone.2021FY-2nd-half_tripdata`
 GROUP BY duration_in_minutes
 ORDER BY duration_in_minutes
----
-# Checking the length of rides as above, but organized by hour. The vast majority of rides seem to be 6 hours or less. 
-# Rides 25 hours or more are 100% casual riders, but a small group in comparison to the overall dataset. They most likely do not represent typical casual riders. 
-# There's a sudden large jump in trips that are 24 hours  (1995 total) vs. 23 hours (115 total) or 25 hours (34 total). 
+
+
+
+
+# Checking the length of rides as above, but organized by hour. The vast majority of rides seem to be 6 hours or less. Rides 25 hours or more are 100% casual riders, but a small group in comparison to the overall dataset. They most likely do not represent typical casual riders. There's a sudden large jump in trips that are 24 hours  (1995 total) vs. 23 hours (115 total) or 25 hours (34 total). 
 
 SELECT 
     DISTINCT TIMESTAMP_DIFF(ended_at, started_at, HOUR) AS duration_in_hours,
@@ -71,10 +52,11 @@ SELECT
 FROM `glassy-compiler-321611.cyclistic_capstone.2021FY-2nd-half_tripdata`
 GROUP BY duration_in_hours
 ORDER BY duration_in_hours
----
-# This gives a closer look at the jump from 23 to 24 hours. It turns out the jump isn't for the hour, it's for exactly 1499 minutes. 
-# Only 1 ride was 1500 minutes, and only 1 ride was 1498 minutes, but 1887 people ended their trips exactly 1499 minutes after starting them. 
-# The sudden jump is very strange, even if there was a strong incentive for doing so.
+
+
+
+
+# This is a closer look at the jump from 23 to 24 hours. The jump isn't for the hour, it's for exactly 1499 minutes. Only 1 ride was 1500 minutes, and only 1 ride was 1498 minutes, but 1887 people ended their trips exactly 1499 minutes after starting them. The sudden jump is suspeect and shouldn't be included in the final analysis.
 
 SELECT 
     TIMESTAMP_DIFF(ended_at, started_at, MINUTE) AS minutes_difference,
@@ -83,10 +65,11 @@ FROM `glassy-compiler-321611.cyclistic_capstone.2021FY-2nd-half_tripdata`
 WHERE TIMESTAMP_DIFF(ended_at, started_at, HOUR) IN (23, 24, 25) 
 GROUP BY minutes_difference HAVING minutes_difference < 1502
 ORDER BY minutes_difference DESC
----
-# Rides under one minute (including the questionable cases which were negative in length) represent about 1.5% of total rides. 
-# Rides more than six hours (including the questionable cases 1499 minutes in length) represent around 0.2% of total rides. 
-# As these groups are outside of our ordinary customer base and contain some questionable values, it would be best to not include them in the final analysis.
+
+
+
+
+# Rides under one minute (including the questionable cases which were negative in length) represent about 1.5% of total rides. Rides more than six hours (including the questionable cases 1499 minutes in length) represent around 0.2% of total rides. As these groups are outside of our ordinary customer base and contain some questionable values, it would be best to not include them in the final analysis.
 
 SELECT 
     COUNT(started_at) AS total_rides,
@@ -95,14 +78,11 @@ SELECT
     ROUND(COUNT(CASE WHEN TIMESTAMP_DIFF(ended_at, started_at, MINUTE) < 1 THEN 1 END) / COUNT(started_at) * 100,4) AS percent_below_one_minute,
     ROUND(COUNT(CASE WHEN TIMESTAMP_DIFF(ended_at, started_at, HOUR) >= 6 THEN 1 END) / COUNT(started_at) * 100,4) AS percent_more_than_six_hours
 FROM `glassy-compiler-321611.cyclistic_capstone.2021FY-2nd-half_tripdata`
----
-# Pinning down the exact location of each starting station, and verifying the integrity of coordinate information. 
-# This query groups every station in the dataset by name, gives the number of times that station was used for a ride, along with the minimum, 
-# average and maximum longitude/latitude values that appear for each station in the dataset. 
-# Ideally we would expect the minimum/average/maximum for each station to all be the same. 
-# In reality they differ slightly, so this query also adds together the difference between minimum/maxiumum longitude/latitude, and then orders by that difference. 
-# The longitude and latitude data are mostly consistent, varying by less than 0.01 degrees total for all stations except 21. 
-# Using average values is likely a reasonable approximation for each station's actual location.
+
+
+
+
+# Determining the exact location of each starting station, and verifying the integrity of coordinate information. Ideally we would expect the minimum/average/maximum for each station to all be the same. In reality they differ slightly. The longitude and latitude data are mostly consistent, varying by less than 0.01 degrees total for all stations except 21. Using average values a reasonable approximation for each station's actual location.
 
 SELECT 
     start_station_name,
@@ -118,10 +98,11 @@ FROM `glassy-compiler-321611.cyclistic_capstone.2021FY-2nd-half_tripdata`
 WHERE start_station_name IS NOT null
 GROUP BY start_station_name
 ORDER BY total_variance DESC
----
-# Verifying the integrity of the coordinates by looking at the average coordinates for start_stations, and comparing with the end_station coordinates for the same stations. 
-# The total variance is insignificant. With the exception of a single test station, start coordinates and end coordinates vary by less than 0.002 degrees for every 
-# station in the dataset.
+
+
+
+
+# Verifying the integrity of the coordinates by looking at the average coordinates for start_stations, and comparing with the end_station coordinates for the same stations. The total variance is insignificant. With the exception of a single test station, start coordinates and end coordinates vary by less than 0.002 degrees for every station in the dataset.
 
 SELECT 
     start_station_name,
@@ -144,9 +125,11 @@ ON start_trips.start_station_name = end_stations.end_station_name
 WHERE start_station_name IS NOT null
 GROUP BY start_station_name
 ORDER BY total_variance DESC
----
-# Double-checking start stations which are all upper case. It seems like these may or may not be test stations. 
-# As the overall number is very small, it shouldn't have a large impact on the results either way but let's remove them from the final analysis just in case. 
+
+
+
+
+# Double-checking start stations which are all upper case. It seems like these may or may not be test stations. As the overall number is very small, it shouldn't have a large impact on the results either way but let's remove them from the final analysis just in case. 
 
 SELECT 
     start_station_name,
@@ -154,25 +137,30 @@ SELECT
 FROM `glassy-compiler-321611.cyclistic_capstone.2021FY-2nd-half_tripdata` AS start_trips
 WHERE start_station_name = UPPER(start_station_name)
 GROUP BY start_station_name
----
-To summarize: 
--Data values are mostly within expected ranges
--Start/End station names are about 11% null values, coordinates are about 0.1% null values
--There are no duplicate ride_id's
--Trips under 1 minute and over 6 hours will be removed
--Average coordinates for starting and ending stations are in very close agreement
--Upper case stations may be test stations and won't be included in the final analysis
 
-Now, I want to dive into questions related to my analysis.
 
-Which areas of Chicago do casual riders prefer?
-Which stations have the highest and lowest proportion of members vs. casual riders?
-Which stations are most popular (with both members and casual riders)?
-How long are the trips of casual members?
-How has the number of members vs. casual riders varied over the previous six months?
-How does the number of members vs. casual riders vary by time of day, and weekday?
----
-# Gives information on casual riders by day of week. It seems like the weekends are more popular with casual riders than weekdays.
+
+## To summarize: 
+## -Data values are mostly within expected ranges
+## -Start/End station names are about 11% null values, coordinates are about 0.1% null values
+## -There are no duplicate ride_id's
+## -Trips under 1 minute and over 6 hours will be removed
+## -Average coordinates for starting and ending stations are in very close agreement
+## -Upper case stations may be test stations and won't be included in the final analysis
+
+## Now, I want to dive into questions related to my analysis.
+
+## Which areas of Chicago do casual riders prefer?
+## Which stations have the highest and lowest proportion of members vs. casual riders?
+## Which stations are most popular (with both members and casual riders)?
+## How long are the trips of casual members?
+## How has the number of members vs. casual riders varied over the previous six months?
+## How does the number of members vs. casual riders vary by time of day, and weekday?
+
+
+
+
+# Ceasual riders by day of week. Weekends are more popular with casual riders than weekdays.
 
 SELECT 
     FORMAT_DATE("%A", started_at) AS day_of_week,
@@ -189,8 +177,11 @@ ORDER BY (
         WHEN day_of_week='Thursday' THEN 4
         ELSE 5
     END)
----
-# Gives information on casual riders by month. The number of total rides has risen since April, while the proportion of casual riders peaked in July and is now declining again. 
+
+
+
+
+# Casual riders by month. The number of total rides has risen since April, while the proportion of casual riders peaked in July and is now declining again. 
 
 SELECT 
     EXTRACT(MONTH FROM started_at) AS start_month,
@@ -201,8 +192,11 @@ FROM `glassy-compiler-321611.cyclistic_capstone.2021FY-2nd-half_tripdata`
 WHERE TIMESTAMP_DIFF(ended_at, started_at, MINUTE) >= 1 AND TIMESTAMP_DIFF(ended_at, started_at, HOUR) < 6 AND start_station_name <> UPPER(start_station_name)
 GROUP BY start_month
 ORDER BY start_month
----
-# Gives information on number of casual riders by length of their trip, in minutes. 
+
+
+
+
+# Casual riders by length of their trip, in minutes. 
 
 SELECT 
     TIMESTAMP_DIFF(ended_at, started_at, MINUTE) AS length_in_minutes,
@@ -213,9 +207,11 @@ FROM `glassy-compiler-321611.cyclistic_capstone.2021FY-2nd-half_tripdata`
 WHERE TIMESTAMP_DIFF(ended_at, started_at, MINUTE) >= 1 AND TIMESTAMP_DIFF(ended_at, started_at, HOUR) < 6 AND start_station_name <> UPPER(start_station_name)
 GROUP BY length_in_minutes
 ORDER BY length_in_minutes
----
-# 100% of docked_bikes were used by casual riders. There might be a reason for this, perhaps docked_bikes can only be riden by casual riders. 
-# Without knowing more about why 100% of docked_bikes were used by casual riders, I'd rather not use this information in the final analysis. 
+
+
+
+
+# 100% of docked_bikes were used by casual riders. There might be a reason for this, perhaps docked_bikes can only be riden by casual riders. Without knowing more about why 100% of docked_bikes were used by casual riders, I'd rather not include them in the final analysis. 
 
 SELECT 
     rideable_type,
@@ -226,9 +222,11 @@ FROM `glassy-compiler-321611.cyclistic_capstone.2021FY-2nd-half_tripdata`
 WHERE TIMESTAMP_DIFF(ended_at, started_at, MINUTE) >= 1 AND TIMESTAMP_DIFF(ended_at, started_at, HOUR) < 6 AND start_station_name <> UPPER(start_station_name)
 GROUP BY rideable_type
 ORDER BY percent_casual
----
-# This query summarizes and extracts only the data that we need from April to September 2021, specifically the date, month, day of month, hour, 
-# and how long the ride was in seconds, formatted such that we can visualize it easily using R. Rides shorter than 1 minute and 6 hours or longer have been omitted.
+
+
+
+
+# This query summarizes and extracts only the data that we need from April to September 2021, specifically the date, month, day of month, hour, and how long the ride was in seconds, formatted such that we can visualize it easily using R. Rides shorter than 1 minute and 6 hours or longer have been removed.
 
 SELECT 
     EXTRACT(DATE FROM started_at) AS date,
@@ -240,10 +238,11 @@ SELECT
 FROM `glassy-compiler-321611.cyclistic_capstone.2021FY-2nd-half_tripdata`
 WHERE TIMESTAMP_DIFF(ended_at, started_at, MINUTE) >= 1 AND TIMESTAMP_DIFF(ended_at, started_at, HOUR) < 6 AND start_station_name <> UPPER(start_station_name)
 ORDER BY started_at
----
-# This provides information on how many trips occurred at each station, the location of each station, and the percenage of casual riders, 
-# filtering out trips shorter than 1 minute and longer than 6 hours, and stations in upper case. 
-# This data will tell us which stations have the most casual riders vs. members, which stations are most popular, and be used to make a map in R using ggplot2. 
+
+
+
+
+# This provides information on how many trips occurred at each station, the location of each station, and the percenage of casual riders, filtering out trips shorter than 1 minute and longer than 6 hours, and stations in upper case. This data will tell us which stations have the most casual riders vs. members, which stations are most popular, and be used to make a map in R using ggplot2. 
 
 SELECT 
     start_station_name,
